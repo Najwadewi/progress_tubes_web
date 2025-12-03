@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>Layanan & Fasilitas - HotelInn</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <div class="header">
+      <div>
+        <h2>Dashboard HotelInn System</h2>
+        <div class="small">Manajemen Reservasi, Kamar, dan Layanan</div>
+      </div>
+      <div class="right">
+        <div class="small">Halo, <b id="adminName"></b></div>
+        <div style="margin-top:8px;">
+          <button class="btn" onclick="location.href='reservasi/list.html'">Manajemen Reservasi</button>
+          <button class="btn" onclick="location.href='layanan/check.html'">Check-in/out Digital</button>
+          <button class="btn" onclick="location.href='layanan/list.html'">Layanan & Fasilitas</button>
+          <button class="btn btn-danger" id="logout">Logout</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Ringkasan Hari Ini</h3>
+      <div id="summary" class="center small"></div>
+    </div>
+
+    <div class="card">
+      <h3>Status Kamar & Fasilitas</h3>
+      <div id="facilityStatus" class="small" style="display:flex; justify-content: space-around; padding:15px; background:#f0f4f7; border-radius:8px;">
+        <div id="roomCount">Total Kamar: <b>20</b></div>
+        <div id="occupiedCount">Terisi: <b>5</b></div>
+        <div id="availableCount">Tersedia: <b>15</b></div>
+        <div id="poolStatus">Kolam Renang: <b>Buka</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+if (!sessionStorage.getItem('adminLogged')) location.href = 'index.html';
+
+document.getElementById('adminName').textContent = sessionStorage.getItem('adminUser') || 'Admin';
+
+document.getElementById('logout').addEventListener('click', ()=>{
+  sessionStorage.removeItem('adminLogged');
+  sessionStorage.removeItem('adminUser');
+  window.location.href='index.html';
+});
+
+// Summary dan data statis (untuk simulasi)
+function loadSummary(){
+  const today = new Date().toLocaleDateString('id-ID');
+  const reservasi = JSON.parse(localStorage.getItem('reservasi')||'[]');
+  const checkinToday = reservasi.filter(r => r.checkin_date === today).length;
+  const checkoutToday = reservasi.filter(r => r.checkout_date === today && r.status === 'Check-in').length;
+
+  document.getElementById('summary').innerHTML =
+    `Reservasi Hari Ini: <b>${reservasi.length}</b> &nbsp; | &nbsp; Check-in Hari Ini: <b>${checkinToday}</b> &nbsp; | &nbsp; Check-out Hari Ini: <b>${checkoutToday}</b>`;
+}
+loadSummary();
+</script>
+</body>
+</html>

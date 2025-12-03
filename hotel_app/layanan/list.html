@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>Layanan & Fasilitas - HotelInn</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h2>Layanan Kamar & Fasilitas</h2>
+    <div class="top-links">
+      <button class="btn btn-secondary" onclick="location.href='../dashboard.html'">Kembali ke Dashboard</button>
+    </div>
+
+    <div class="card" style="background:#f0f4f7;">
+        <h3>Pesan Layanan/Tambahkan Permintaan</h3>
+        <form id="formLayanan" style="display:flex; gap:10px;">
+            <select id="layananType" required style="width: 200px;">
+                <option value="">-- Pilih Layanan --</option>
+                <option value="Room Service">Room Service (Makanan/Minuman)</option>
+                <option value="Laundry">Laundry</option>
+                <option value="Spa">Pemesanan Spa</option>
+                <option value="Taksi">Pesan Taksi</option>
+                <option value="Lainnya">Lainnya</option>
+            </select>
+            <input type="number" id="roomNumber" placeholder="Nomor Kamar" required style="width: 150px;">
+            <input type="text" id="detail" placeholder="Detail Permintaan" required style="flex: 1;">
+            <button type="submit" class="btn btn-accent" style="width: 150px;">Catat</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3>Permintaan Aktif (<span id="countActive">0</span>)</h3>
+        <table id="tableLayanan">
+            <thead>
+                <tr><th>Waktu</th><th>Kamar</th><th>Layanan</th><th>Detail</th><th>Status</th><th>Aksi</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Status Fasilitas Hotel</h3>
+        <div style="display:flex; justify-content: space-around; font-size: 1.1em; background:#f0f4f7; padding:15px; border-radius:8px;">
+            <div>Kolam Renang: <b>Buka</b></div>
+            <div>Pusat Kebugaran: <b>Buka (Penuh 80%)</b></div>
+            <div>Restoran: <b>Buka</b></div>
+        </div>
+    </div>
+  </div>
+</div>
+
+<script>
+if (!sessionStorage.getItem('adminLogged')) location.href = '../index.html';
+
+// Mengelola array 'layanan' di localStorage
+function getLayanan(){ return JSON.parse(localStorage.getItem('layanan')||'[]'); }
+function saveLayanan(arr){ localStorage.setItem('layanan', JSON.stringify(arr)); }
+
+function render(){
+    const tbody = document.querySelector('#tableLayanan tbody'); tbody.innerHTML = '';
+    let layanan = getLayanan().filter(l => l.status === 'Aktif').sort((a,b)=>a.id-b.id);
+    
+    layanan.forEach(l => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${l.time}</td>
+            <td style="text-align:center;">${l.room}</td>
+            <td>${l.type}</td>
+            <td>${l.detail}</td>
+            <td style="text-align:center; color:blue;">${l.status}</td>
+            <td style="text-align:center;">
+                <button class="btn btn-accent" style="padding: 5px 10px; font-size: 12px;" onclick="completeLayanan(${l.id})">Selesai</button>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+    
+    document.getElementById('countActive').textContent = layanan.length;
+}
+
+function completeLayanan(id) {
+    if(!confirm('Tandai layanan ini sebagai Selesai?')) return;
+    const updatedLayanan = getLayanan().map(l => {
+        if (l.id === id) {
+            return { ...l, status: 'Selesai' };
+        }
+        return l;
+    });
+    saveLayanan(updatedLayanan);
+    render();
+}
+
+document.getElementById('formLayanan').addEventListener('submit', function(e){
+    e.preventDefault();
+    
+    const type = document.getElementById('layananType').value;
+    const room = document.getElementById('roomNumber').value.trim();
+    const detail = document.getElementById('detail').value.trim();
+
+    if (!type || !room || !detail) return;
+    
+    const arr = getLayanan();
+    const id = arr.length ? Math.max(...arr.map(x=>x.id))+1 : 1;
+    const time = new Date().toLocaleTimeString('id-ID');
+
+    const newLayanan = {
+        id: id,
+        time: time,
+        room: room,
+        type: type,
+        detail: detail,
+        status: 'Aktif'
+    };
+
+    arr.push(newLayanan);
+    saveLayanan(arr);
+    
+    // Reset form dan render
+    document.getElementById('formLayanan').reset();
+    render();
+    alert(`Permintaan Layanan (${type}) untuk Kamar ${room} dicatat.`);
+});
+
+// Inisialisasi data layanan jika kosong
+if (!localStorage.getItem('layanan')) {
+  localStorage.setItem('layanan', JSON.stringify([]));
+}
+render();
+</script>
+</body>
+</html>

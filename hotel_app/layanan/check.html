@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>Layanan & Fasilitas - HotelInn</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h2>Check-in / Check-out Digital</h2>
+    <div class="top-links">
+      <button class="btn btn-secondary" onclick="location.href='../dashboard.html'">Kembali ke Dashboard</button>
+    </div>
+
+    <form id="searchForm" style="display:flex; gap:10px; margin-bottom: 20px;">
+        <input type="number" id="reservasiId" placeholder="Masukkan ID Reservasi" required style="width: 250px;">
+        <button type="submit" class="btn">Cari Reservasi</button>
+    </form>
+
+    <div id="resultCard" class="card" style="display:none; border: 2px solid #003366;">
+        <h3>Detail Tamu <span id="guestName"></span></h3>
+        <p>Tipe Kamar: <b id="roomType"></b> | Check-in: <b id="ciDate"></b> | Check-out: <b id="coDate"></b></p>
+        <p>Status Pembayaran: <b id="paymentStatus"></b></p>
+        
+        <div class="action-buttons" style="margin-top:20px;">
+            <button class="btn btn-accent" id="btnCheckIn" onclick="updateStatus('Check-in')">Check-in Sekarang</button>
+            <button class="btn btn-danger" id="btnCheckOut" onclick="updateStatus('Check-out')">Check-out Sekarang</button>
+        </div>
+    </div>
+    
+    <div id="message" class="center small" style="margin-top:15px; color:red;"></div>
+  </div>
+</div>
+
+<script>
+if (!sessionStorage.getItem('adminLogged')) location.href = '../index.html';
+
+function getReservasi(){ return JSON.parse(localStorage.getItem('reservasi')||'[]'); }
+function saveReservasi(arr){ localStorage.setItem('reservasi', JSON.stringify(arr)); }
+const roomTypes = [{id:1, name:'Standard', price:300000}, {id:2, name:'Deluxe', price:550000}];
+
+let currentReservation = null;
+
+document.getElementById('searchForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    const id = Number(document.getElementById('reservasiId').value);
+    const reservasi = getReservasi();
+    const found = reservasi.find(r => r.id === id);
+    
+    document.getElementById('resultCard').style.display = 'none';
+    document.getElementById('message').textContent = '';
+
+    if (found) {
+        currentReservation = found;
+        const room = roomTypes.find(rt => rt.id === found.room_id) || { name: 'Unknown' };
+        
+        document.getElementById('guestName').textContent = found.guest_name;
+        document.getElementById('roomType').textContent = room.name;
+        document.getElementById('ciDate').textContent = found.checkin_date;
+        document.getElementById('coDate').textContent = found.checkout_date;
+        document.getElementById('paymentStatus').textContent = found.status;
+        
+        // Atur tombol berdasarkan status
+        document.getElementById('btnCheckIn').style.display = found.status === 'Lunas' ? 'inline-block' : 'none';
+        document.getElementById('btnCheckOut').style.display = found.status === 'Check-in' ? 'inline-block' : 'none';
+
+        document.getElementById('resultCard').style.display = 'block';
+    } else {
+        document.getElementById('message').textContent = 'Reservasi tidak ditemukan.';
+    }
+});
+
+function updateStatus(newStatus) {
+    if (!currentReservation) return;
+
+    if (!confirm(`Yakin ${newStatus}? Status reservasi akan diubah.`)) return;
+
+    const updatedReservasi = getReservasi().map(r => {
+        if (r.id === currentReservation.id) {
+            return { ...r, status: newStatus };
+        }
+        return r;
+    });
+
+    saveReservasi(updatedReservasi);
+    document.getElementById('message').textContent = `Status berhasil diubah menjadi: ${newStatus}`;
+    document.getElementById('message').style.color = 'green';
+    
+    document.getElementById('resultCard').style.display = 'none';
+    currentReservation = null;
+    
+    // Opsional: Perbarui dashboard summary
+    if (window.opener && window.opener.loadSummary) window.opener.loadSummary();
+}
+</script>
+</body>
+</html>

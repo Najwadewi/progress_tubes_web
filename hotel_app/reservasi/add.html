@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>Layanan & Fasilitas - HotelInn</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h2>Buat Reservasi Baru</h2>
+    <form id="formReservasi">
+      <label>Nama Tamu</label>
+      <input type="text" id="guest_name" required>
+      <label>Tipe Kamar</label>
+      <select id="room_id" required></select>
+      <label>Tanggal Check-in</label>
+      <input type="date" id="checkin_date" required>
+      <label>Tanggal Check-out</label>
+      <input type="date" id="checkout_date" required>
+      <label>Durasi (Malam)</label>
+      <input type="number" id="duration" readonly>
+      <label>Total Harga</label>
+      <input type="text" id="total_price_display" readonly>
+      <input type="hidden" id="total_price">
+      
+      <h3>Simulasi Pembayaran Online</h3>
+      <label>Metode Pembayaran</label>
+      <select id="payment_method">
+        <option value="Online">Transfer Bank/Kartu (Online)</option>
+        <option value="Offline">Bayar di Hotel (Deposit)</option>
+      </select>
+      
+      <button type="submit" class="btn-accent" style="margin-top:20px;">Proses Pemesanan & Pembayaran</button>
+    </form>
+    <div style="text-align:center;margin-top:10px;">
+      <button class="btn btn-secondary" onclick="location.href='list.html'">Kembali</button>
+    </div>
+  </div>
+</div>
+
+<script>
+if (!sessionStorage.getItem('adminLogged')) location.href = '../index.html';
+
+const roomTypes = [{id:1, name:'Standard', price:300000}, {id:2, name:'Deluxe', price:550000}];
+function getReservasi(){ return JSON.parse(localStorage.getItem('reservasi')||'[]'); }
+function saveReservasi(arr){ localStorage.setItem('reservasi', JSON.stringify(arr)); }
+
+const roomIdSelect = document.getElementById('room_id');
+const checkinInput = document.getElementById('checkin_date');
+const checkoutInput = document.getElementById('checkout_date');
+
+// 1. Load Tipe Kamar
+roomTypes.forEach(rt => {
+  roomIdSelect.innerHTML += `<option value="${rt.id}" data-price="${rt.price}">${rt.name} (Rp ${rt.price.toLocaleString('id-ID')})</option>`;
+});
+
+// 2. Fungsi Hitung Durasi & Harga
+function calculatePrice() {
+  const checkin = new Date(checkinInput.value);
+  const checkout = new Date(checkoutInput.value);
+  const room = roomTypes.find(rt => rt.id === Number(roomIdSelect.value));
+
+  if (checkin && checkout && room) {
+    const timeDiff = checkout.getTime() - checkin.getTime();
+    const duration = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    
+    if (duration > 0) {
+      const totalPrice = duration * room.price;
+      document.getElementById('duration').value = duration;
+      document.getElementById('total_price').value = totalPrice;
+      document.getElementById('total_price_display').value = `Rp ${totalPrice.toLocaleString('id-ID')}`;
+      return true;
+    }
+  }
+  
+  document.getElementById('duration').value = 0;
+  document.getElementById('total_price').value = 0;
+  document.getElementById('total_price_display').value = 'Rp 0';
+  return false;
+}
+
+// Event Listeners
+roomIdSelect.addEventListener('change', calculatePrice);
+checkinInput.addEventListener('change', calculatePrice);
+checkoutInput.addEventListener('change', calculatePrice);
+
+
+// 3. Proses Simpan Reservasi
+document.getElementById('formReservasi').addEventListener('submit', function(e){
+  e.preventDefault();
+  
+  if (!calculatePrice()) {
+    alert('Durasi reservasi tidak valid. Periksa tanggal.');
+    return;
+  }
+  
+  const total = Number(document.getElementById('total_price').value);
+  const duration = Number(document.getElementById('duration').value);
+  
+  if (total <= 0) {
+    alert('Pilih tanggal dan kamar yang valid.');
+    return;
+  }
+  
+  const id = getReservasi().length ? Math.max(...getReservasi().map(r=>r.id))+1 : 1;
+  const payment = document.getElementById('payment_method').value;
+
+  const newReservation = {
+    id: id,
+    guest_name: document.getElementById('guest_name').value.trim(),
+    room_id: Number(roomIdSelect.value),
+    checkin_date: new Date(checkinInput.value).toLocaleDateString('id-ID'), // Format DD/MM/YYYY
+    checkout_date: new Date(checkoutInput.value).toLocaleDateString('id-ID'),
+    duration: duration,
+    total_price: total,
+    payment: payment,
+    status: (payment === 'Online' || payment === 'Offline') ? 'Lunas' : 'Menunggu' // Simulasi lunas jika online/offline, status awal
+  };
+
+  const arr = getReservasi();
+  arr.push(newReservation);
+  saveReservasi(arr);
+  
+  alert(`Pemesanan berhasil! Status: ${newReservation.status}. Total: Rp ${total.toLocaleString('id-ID')}`);
+  location.href='list.html';
+});
+</script>
+</body>
+</html>

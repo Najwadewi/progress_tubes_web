@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>Layanan & Fasilitas - HotelInn</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h2>Daftar Reservasi HotelInn</h2>
+    <div class="top-links">
+      <button class="btn btn-accent" onclick="location.href='add.html'">+ Buat Reservasi Baru</button>
+      <button class="btn btn-secondary" onclick="location.href='../dashboard.html'">Kembali</button>
+    </div>
+
+    <table id="tableReservasi">
+      <thead>
+        <tr><th>ID</th><th>Nama Tamu</th><th>Tipe Kamar</th><th>Check-in/out</th><th>Total Bayar</th><th>Status</th><th>Aksi</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+if (!sessionStorage.getItem('adminLogged')) location.href = '../index.html';
+
+// Data Kamar (untuk simulasi)
+const roomTypes = [{id:1, name:'Standard', price:300000}, {id:2, name:'Deluxe', price:550000}];
+function getReservasi(){ return JSON.parse(localStorage.getItem('reservasi')||'[]'); }
+function saveReservasi(arr){ localStorage.setItem('reservasi', JSON.stringify(arr)); }
+
+function render(){
+  const tbody = document.querySelector('#tableReservasi tbody'); tbody.innerHTML = '';
+  const reservasi = getReservasi().sort((a,b)=>b.id-a.id);
+  
+  reservasi.forEach(r=>{
+    const room = roomTypes.find(rt => rt.id === r.room_id) || { name: 'Unknown' };
+    const statusColor = r.status === 'Check-in' ? 'green' : (r.status === 'Lunas' ? 'blue' : 'gray');
+    
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="text-align:center;">${r.id}</td>
+      <td>${r.guest_name}</td>
+      <td>${room.name}</td>
+      <td>${r.checkin_date} s/d ${r.checkout_date}</td>
+      <td style="text-align:right;">Rp ${Number(r.total_price).toLocaleString('id-ID')}</td>
+      <td style="text-align:center; color:${statusColor}; font-weight:bold;">${r.status}</td>
+      <td style="text-align:center;">
+        <div class="action-buttons">
+          <button class="btn btn-secondary" onclick="hapus(${r.id})">Batalkan</button>
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+function hapus(id){
+  if(!confirm('Batalkan reservasi ini?')) return;
+  const arr = getReservasi().filter(x=>x.id!==id);
+  saveReservasi(arr); render();
+}
+
+// Data awal jika kosong
+if (!localStorage.getItem('reservasi')) {
+  localStorage.setItem('reservasi', JSON.stringify([
+    { id: 1, guest_name: 'Budi Santoso', room_id: 2, checkin_date: '03/12/2025', checkout_date: '05/12/2025', total_price: 1100000, status: 'Lunas', payment: 'Online' }
+  ]));
+}
+render();
+</script>
+</body>
+</html>
